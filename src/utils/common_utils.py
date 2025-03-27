@@ -7,7 +7,8 @@ import json
 from datetime import datetime
 import pytz
 
-from config import LANGUAGE
+from config import LANGUAGE, HOST_IP, LOG_CONSOLE_PRINT
+from utils.logger import model_logger
 
 def get_real_time_str():
     now_utc = datetime.now(pytz.utc)
@@ -183,3 +184,32 @@ def merge_jsonl(folder_path = "./datasets/web_8_turns"):
             all_data = pd.concat([all_data, df], ignore_index=True)
 
     return all_data
+
+def print_logs(question="", input_parameter="", output_parameter="", simple_output_parameter="", model_mes="", remote_mes="", start_time=0, service_cost_total=0, request_id=None, user_id=None, conversation_id=None, dialogue_id=None, service_type="deep research", stage_name="", stage_num="", service_state="200", error_mes="", log_console_print=LOG_CONSOLE_PRINT, traceback_info=[]):
+    dt = datetime.fromtimestamp(start_time)
+    logs = {
+        "id": request_id,
+        "request_id": request_id,
+        "user_id": user_id, 
+        "conversation_id": conversation_id,
+        "dialogue_id": dialogue_id,
+        "service_type": service_type,
+        "stage_name": stage_name,
+        "stage_num": stage_num,
+        "time": dt.strftime("%Y-%m-%d %H:%M:%S"),
+        "query": question,
+        "service_version": "",
+        "input_parameter": json.dumps(input_parameter, ensure_ascii=False),
+        "output_parameter": json.dumps(output_parameter, ensure_ascii=False),
+        "simple_output_parameter": simple_output_parameter,
+        "model_mes": model_mes,
+        "remote_mes": remote_mes, 
+        "service_cost_total": service_cost_total,
+        "service_ip": HOST_IP,
+        "service_states": service_state,
+        "error_mes": error_mes,
+        "traceback_info": [{"file": info[0], "line": info[1], "function": info[2], "code_text": info[3]} for info in traceback_info]
+    }
+    if log_console_print:
+        print(json.dumps(logs, ensure_ascii=False))
+    model_logger.info(json.dumps(logs, ensure_ascii=False))

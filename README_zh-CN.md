@@ -328,10 +328,10 @@ DeepLiterature 采用模块化设计，主要目录结构如下：
 
   ```
   # 测试样例
-  curl --location 'http://127.0.0.1:36668/stream' \
+  curl --location 'http://127.0.0.1:36668/v1/chat/completions' \
   --header 'Content-Type: application/json' \
   --data '{
-      "query": "2025亚冬会奖牌排名第一的国家是哪个国家，并且以柱状图的方式展示其各奖牌数量。"
+      "query": "繁花中年龄最小的女演员"
   }'
   ```
   ```

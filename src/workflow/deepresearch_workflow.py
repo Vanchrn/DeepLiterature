@@ -3,8 +3,9 @@ import time
 import json
 import re
 import traceback
+import logging
 
-from agents import OrchestratorAgent, OptimizerAgent, SelectorAgent, SufficiencyValidatorAgent, ReorchestratorAgent, AssitantAgent, CodeAgent
+from agents import OrchestratorAgent, OptimizerAgent, SelectorAgent, SufficiencyValidatorAgent, ReorchestratorAgent, AssitantAgent, CodeAgent, PlannerAgent
 from tools.executors import CodeExecutor
 from llms import LLMFactory
 from utils.common_utils import latex_render, replace_ref_tag2md, get_location_by_ip, get_real_time_str
@@ -17,16 +18,48 @@ from .utils import function_call_receive_document, function_call_receive_snippet
 from .utils import convert_think_message_to_markdown, format_data
 from config import LANGUAGE, SEARCH_ENGINE, LLM_MODEL
 
-def run(question, queue, api_queue, lang, context=dict(), save_jsonl_path="", debug_verbose=True, meta_verbose=False):
+def planner_run(question, queue, api_queue, lang, context=dict(), save_jsonl_path="", debug_verbose=True, meta_verbose=False):
+    llm = LLMFactory.construct(LLM_MODEL)
+    planner = PlannerAgent(llm=llm, lang=lang)
+    request_id = str(uuid.uuid4())
+    _reasoning_content = ""
+    for label, _stream_text in planner.run(question):
+        if label == "think":
+            _reasoning_content += _stream_text
+            queue.put(["placeholder_think_stream_markdown", convert_think_message_to_markdown(_reasoning_content)])
+            if len(context["online_steps"]) > 0:
+                context["online_steps"][-1] = convert_think_message_to_markdown(_reasoning_content)
+            else:
+                context["online_steps"].append(convert_think_message_to_markdown(_reasoning_content))
+            api_queue.put(format_data(reasoning_content=_stream_text, id=request_id, stage="planning"))
+        else:
+            result = _stream_text
+    logging.info(f"planner result: {result}")
+    pre_messages=""
+    now_messages=""
+    now_messages_ls=[]
+    for i,step_with_des in enumerate(result):
+        if pre_messages:
+            # step_question="【已知信息】："+pre_messages+"\n"+"【当前需要解决的问题】："+step_with_des['step']+', '+step_with_des['description']
+            step_question="【Known Information】:" + pre_messages + "\n" + "【Current Problem to Solve】" + step_with_des['step'] + ', ' + step_with_des['description']
+        else:
+            step_question=step_with_des['step']+', '+step_with_des['description']
+        now_messages=run(step_question, queue, api_queue, lang, context, save_jsonl_path, debug_verbose, meta_verbose,request_id=request_id)
+        now_messages_ls.append({f"step{i}":now_messages.copy()}) # 拷贝
+        pre_messages=now_messages[-1]["content"]+"\n"
+    return {"question":question,"plan":result,"now_messages_ls":now_messages_ls}
+
+def run(question, queue, api_queue, lang, context=dict(), save_jsonl_path="", debug_verbose=True, meta_verbose=False,request_id=None):
+    now_messages="cy_debug"
     try:
-        run_throw_exception(question, queue, api_queue, lang, context=context, save_jsonl_path=save_jsonl_path,  debug_verbose=debug_verbose, meta_verbose=meta_verbose)
+        now_messages=run_throw_exception(question, queue, api_queue, lang, context=context, save_jsonl_path=save_jsonl_path,  debug_verbose=debug_verbose, meta_verbose=meta_verbose,request_id=request_id)
     except Exception as e:
         traceback.print_exc()
         queue.put(["exception", None])
         api_queue.put("exception")
-    return
+    return now_messages
 
-def run_throw_exception(question, queue, api_queue, lang, context=dict(), save_jsonl_path="", debug_verbose=True, meta_verbose=False):
+def run_throw_exception(question, queue, api_queue, lang, context=dict(), save_jsonl_path="", debug_verbose=True, meta_verbose=False, request_id=None):
     llm = LLMFactory.construct(LLM_MODEL)
     orchestrator = OrchestratorAgent(llm=llm, lang=lang)
     optimizer = OptimizerAgent(llm=llm, lang=lang)
@@ -37,8 +70,8 @@ def run_throw_exception(question, queue, api_queue, lang, context=dict(), save_j
     code_agent = CodeAgent(llm=llm, lang=lang)
 
     code_executor = CodeExecutor()
-
-    request_id = str(uuid.uuid4())
+    if not request_id:
+        request_id = str(uuid.uuid4())
     now_messages = []
     meta_data = {
         "time_stamp":f"{get_real_time_str()}",
@@ -434,5 +467,4 @@ def run_throw_exception(question, queue, api_queue, lang, context=dict(), save_j
                     f.write(json_line + '\n')
     queue.put(["finish", None])
     api_queue.put("finish")
-    return
-    
+    return now_messages

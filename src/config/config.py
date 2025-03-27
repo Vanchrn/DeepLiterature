@@ -56,7 +56,13 @@ JINA_API_KEY = JINA_CONFIG["api_key"]
 
 ################# code-runner Configuration ###########################
 CODE_RUNNER_CONFIG = config["code-runner"]
-CODE_RUNNER_API_URL = CODE_RUNNER_CONFIG["api_url"]
+CODE_RUNNER_API_URL = CODE_RUNNER_CONFIG["url"]
+CODE_RUNNER_API_SUB_URL = CODE_RUNNER_CONFIG["sub_url"]
+################# tilake-utils Configuration ###########################
+TILAKE_UTILS_CONFIG = config["tilake-utils"]
+TILAKE_UTILS_X_TILAKE_APP_KEY = TILAKE_UTILS_CONFIG["x_tilake_app_key"]
+TILAKE_UTILS_X_TILAKE_APP_SECRET = TILAKE_UTILS_CONFIG["x_tilake_app_secret"]
+TILAKE_UTILS_X_TILAKE_CA_SIGNATURE_METHOD = TILAKE_UTILS_CONFIG["x_tilake_ca_signature_method"]
 
-
-
+HOST_IP = config["host_ip"]
+LOG_CONSOLE_PRINT = config["log_console_print"]

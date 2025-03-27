@@ -10,3 +10,6 @@ ipykernel
 shortuuid
 torch
 transformers
+fastapi
+uvicorn
+json_repair
