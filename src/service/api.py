@@ -2,7 +2,7 @@
 Author: 陈瑶 1271650511@qq.com
 Date: 2025-03-21 10:58:39
 LastEditors: 陈瑶 1271650511@qq.com
-LastEditTime: 2025-03-27 21:05:02
+LastEditTime: 2025-03-27 23:21:35
 FilePath: /DeepLiterature/src/service/api.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -166,7 +166,7 @@ if __name__ == "__main__":
                 index = futures[future]
                 res_lst[index] = None  # 如果出错，则存储None
                 logging.error(f"Unexpected error for query at index {index}: {e}")
-    with open("/Users/chenyao/Documents/DeepLiterature/src/logs/smol_test_sample.pkl", "wb") as f:
+    with open("/Users/chenyao/Documents/DeepLiterature/src/logs/smol_test_24.pkl", "wb") as f:
         pickle.dump(res_lst, f)
     for i,idx in zip(range(len(queries)),queries_idx):
         data[idx]=json.loads(res_lst[i], ensure_ascii=False)
